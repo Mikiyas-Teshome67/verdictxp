@@ -84,6 +84,7 @@ async function send() {
     headers: {"Content-Type": "application/json"},
     body: JSON.stringify({ message: text })
   });
+fetch("https://agriculture-assistant.YOURNAME.workers.dev", {
 
   const data = await res.json();
   messages.innerHTML += `<div class="msg bot">AgriBot: ${data.reply}</div>`;
