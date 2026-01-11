@@ -2,19 +2,61 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Agriculture Assistant 🌱</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agriculture Assistant 🌱</title>
 <style>
-body { font-family: Arial; background: #eef7ee; display: flex; justify-content: center; align-items: center; height: 100vh; }
-#chatbox { width: 360px; background: white; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; }
-#header { background: #2ecc71; color: white; padding: 15px; text-align: center; border-radius: 15px 15px 0 0; font-weight: bold; }
-#messages { flex: 1; padding: 10px; overflow-y: auto; font-size: 14px; }
-.msg { margin-bottom: 8px; }
+body {
+  font-family: Arial, sans-serif;
+  background: #eef7ee;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+#chatbox {
+  width: 350px;
+  background: white;
+  border-radius: 15px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+}
+#header {
+  background: #2ecc71;
+  color: white;
+  padding: 15px;
+  text-align: center;
+  border-radius: 15px 15px 0 0;
+}
+#messages {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  min-height: 200px;
+}
+.msg {
+  margin-bottom: 10px;
+}
 .user { color: #2c3e50; font-weight: bold; }
 .bot { color: #27ae60; }
-#input { display: flex; border-top: 1px solid #ddd; }
-#input input { flex: 1; border: none; padding: 10px; outline: none; }
-#input button { border: none; background: #2ecc71; color: white; padding: 10px 16px; cursor: pointer; }
+#input {
+  display: flex;
+  border-top: 1px solid #ddd;
+}
+#input input {
+  flex: 1;
+  border: none;
+  padding: 10px;
+  font-size: 14px;
+}
+#input button {
+  border: none;
+  background: #2ecc71;
+  color: white;
+  padding: 10px 15px;
+  cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -22,59 +64,58 @@ body { font-family: Arial; background: #eef7ee; display: flex; justify-content: 
 <div id="chatbox">
   <div id="header">🌾 Agriculture Assistant</div>
   <div id="messages">
-    <div class="msg bot">AgriBot: Hello! Ask me about crops, soil, pests 🌱</div>
+    <div class="msg bot">👋 Hello! Ask me about crops, soil, or pests.</div>
   </div>
   <div id="input">
-    <input id="text" placeholder="Ask about crops, soil, pests..." />
+    <input id="text" placeholder="Ask your question..." />
     <button id="sendBtn">Send</button>
   </div>
 </div>
 
 <script>
 const messages = document.getElementById("messages");
-const input = document.getElementById("text");
 const sendBtn = document.getElementById("sendBtn");
+const textInput = document.getElementById("text");
 
-// ✅ Your Cloudflare Worker UR
-  const WORKER_URL = "https://agriculture-assistant.mikiyasteshome749.workers.dev";
+// <-- Replace with your deployed Cloudflare Worker URL -->
+const WORKER_URL = "https://agriculture-assistant.mikiyasteshome749.workers.dev";
 
+function appendMessage(text, sender="bot") {
+  const div = document.createElement("div");
+  div.classList.add("msg", sender);
+  div.textContent = (sender === "user" ? "You: " : "Assistant: ") + text;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
 
 async function sendMessage() {
-  const text = input.value.trim();
-  if (!text) return;
+  const message = textInput.value.trim();
+  if (!message) return;
 
-  messages.innerHTML += `<div class="msg user">You: ${text}</div>`;
-  input.value = "";
-  messages.scrollTop = messages.scrollHeight;
-
-  const botMessageEl = document.createElement("div");
-  botMessageEl.classList.add("msg", "bot");
-  botMessageEl.textContent = "AgriBot: Typing...";
-  messages.appendChild(botMessageEl);
-  messages.scrollTop = messages.scrollHeight;
+  appendMessage(message, "user");
+  textInput.value = "";
+  appendMessage("Typing...", "bot");
+  const botMessageEl = messages.lastChild;
 
   try {
     const res = await fetch(WORKER_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message: text })
+      body: JSON.stringify({ message })
     });
 
-    if (!res.ok) throw new Error("Worker error " + res.status);
+    if (!res.ok) throw new Error(`Worker returned ${res.status}`);
 
     const data = await res.json();
-    botMessageEl.textContent = "AgriBot: " + (data.reply || "I could not understand.");
+    botMessageEl.textContent = "Assistant: " + (data.reply || "No reply.");
   } catch (err) {
     console.error(err);
-    botMessageEl.textContent = "AgriBot: ⚠️ Server error. Try again.";
+    botMessageEl.textContent = "Assistant: ⚠️ Could not connect to server.";
   }
-
-  messages.scrollTop = messages.scrollHeight;
 }
 
-// ✅ Attach events properly
 sendBtn.addEventListener("click", sendMessage);
-input.addEventListener("keydown", e => {
+textInput.addEventListener("keypress", e => {
   if (e.key === "Enter") sendMessage();
 });
 </script>
