@@ -1,80 +1,144 @@
-export default {
-  async fetch(request, env) {
-    const ALLOWED_ORIGIN = "https://mikiyas-teshome67.github.io";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Agriculture Assistant 🌱</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    };
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #eef7ee;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
 
-    // Handle preflight requests
-    if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: corsHeaders });
-    }
+  #chatbox {
+    width: 360px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+  }
 
-    // Only allow POST requests
-    if (request.method !== "POST") {
-      return new Response(JSON.stringify({ error: "Method Not Allowed" }), {
-        status: 405,
-        headers: corsHeaders,
-      });
-    }
+  #header {
+    background: #2ecc71;
+    color: white;
+    padding: 15px;
+    text-align: center;
+    border-radius: 15px 15px 0 0;
+    font-weight: bold;
+  }
 
-    let body;
+  #messages {
+    flex: 1;
+    padding: 10px;
+    overflow-y: auto;
+    height: 300px;
+  }
+
+  .msg {
+    margin-bottom: 10px;
+    word-wrap: break-word;
+  }
+
+  .user { color: #2c3e50; font-weight: bold; }
+  .bot { color: #27ae60; }
+
+  #input {
+    display: flex;
+    border-top: 1px solid #ddd;
+  }
+
+  #input input {
+    flex: 1;
+    border: none;
+    padding: 10px;
+    font-size: 14px;
+    border-radius: 0 0 0 15px;
+  }
+
+  #input button {
+    border: none;
+    background: #2ecc71;
+    color: white;
+    padding: 10px 15px;
+    cursor: pointer;
+    font-weight: bold;
+    border-radius: 0 0 15px 0;
+  }
+
+  #input input:focus {
+    outline: none;
+  }
+</style>
+</head>
+
+<body>
+<div id="chatbox">
+  <div id="header">🌾 Agriculture Assistant</div>
+  <div id="messages">
+    <div class="msg bot">👋 Hello! Ask me anything about crops, pests, and diseases.</div>
+  </div>
+  <div id="input">
+    <input id="text" placeholder="Type your question here..." />
+    <button onclick="send()">Send</button>
+  </div>
+</div>
+
+<script>
+  const messagesEl = document.getElementById("messages");
+  const inputEl = document.getElementById("text");
+
+  // Replace with your deployed Cloudflare Worker URL
+  const WORKER_URL = "https://agriculture-assistant.mikiyasteshome749.workers.dev";
+
+  function appendMessage(text, sender) {
+    const div = document.createElement("div");
+    div.classList.add("msg", sender);
+    div.textContent = (sender === "user" ? "You: " : "Assistant: ") + text;
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  async function send() {
+    const text = inputEl.value.trim();
+    if (!text) return;
+
+    appendMessage(text, "user");
+    inputEl.value = "";
+
+    // Show temporary typing message
+    const typingEl = document.createElement("div");
+    typingEl.classList.add("msg", "bot");
+    typingEl.textContent = "Assistant: Typing...";
+    messagesEl.appendChild(typingEl);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+
     try {
-      body = await request.json();
-    } catch {
-      return new Response(JSON.stringify({ reply: "Invalid JSON" }), {
-        status: 400,
-        headers: corsHeaders,
+      const res = await fetch(WORKER_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text })
       });
-    }
 
-    if (!body.message) {
-      return new Response(JSON.stringify({ reply: "Message required" }), {
-        status: 400,
-        headers: corsHeaders,
-      });
-    }
+      if (!res.ok) throw new Error(`Worker error: ${res.status}`);
 
-    try {
-      const openaiResponse = await fetch(
-        "https://api.openai.com/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "gpt-3.5-turbo",
-            messages: [
-              {
-                role: "system",
-                content:
-                  "You are an expert agriculture assistant helping farmers and students.",
-              },
-              { role: "user", content: body.message },
-            ],
-            temperature: 0.4,
-          }),
-        }
-      );
-
-      const data = await openaiResponse.json();
-      const reply = data?.choices?.[0]?.message?.content || "I could not generate a reply.";
-
-      return new Response(JSON.stringify({ reply }), {
-        status: 200,
-        headers: corsHeaders,
-      });
+      const data = await res.json();
+      typingEl.textContent = "Assistant: " + (data.reply || "I could not generate a reply.");
     } catch (err) {
       console.error(err);
-      return new Response(JSON.stringify({ reply: "Server error" }), {
-        status: 500,
-        headers: corsHeaders,
-      });
+      typingEl.textContent = "Assistant: ⚠️ Error connecting to server.";
     }
-  },
-};
+  }
+
+  // Press Enter to send
+  inputEl.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") send();
+  });
+</script>
+</body>
+</html>
