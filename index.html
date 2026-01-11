@@ -98,33 +98,19 @@ body {
 </div>
 
 <script>
-const messages = document.getElementById("messages");
-const input = document.getElementById("text");
-const sendBtn = document.getElementById("sendBtn");
-
-// ✅ Put your deployed Worker URL here
 const WORKER_URL = "https://agriculture-assistant.mikiyasteshome749.workers.dev";
 
-function appendMessage(text, sender="bot") {
-  const div = document.createElement("div");
-  div.classList.add("msg", sender);
-  div.textContent = text;
-  messages.appendChild(div);
-  messages.scrollTop = messages.scrollHeight;
-}
-
 async function sendMessage() {
-  const text = input.value.trim();
+  const text = document.getElementById("text").value.trim();
   if (!text) return;
 
   appendMessage(`You: ${text}`, "user");
-  input.value = "";
+  document.getElementById("text").value = "";
 
-  // Temporary "typing..." message
-  const botMsg = document.createElement("div");
-  botMsg.classList.add("msg", "bot");
-  botMsg.textContent = "Typing...";
-  messages.appendChild(botMsg);
+  const botMsgEl = document.createElement("div");
+  botMsgEl.className = "msg bot";
+  botMsgEl.textContent = "Typing...";
+  messages.appendChild(botMsgEl);
   messages.scrollTop = messages.scrollHeight;
 
   try {
@@ -137,18 +123,25 @@ async function sendMessage() {
     if (!res.ok) throw new Error(`Worker error: ${res.status}`);
 
     const data = await res.json();
-    botMsg.textContent = `Assistant: ${data.reply}`;
+    botMsgEl.textContent = `Assistant: ${data.reply}`;
+
   } catch (err) {
     console.error(err);
-    botMsg.textContent = "Assistant: ⚠️ Error connecting to server.";
+    botMsgEl.textContent = "Assistant: ⚠️ Error connecting to server.";
   }
 }
 
-// Event listeners
+function appendMessage(text, sender="bot") {
+  const div = document.createElement("div");
+  div.className = "msg " + sender;
+  div.textContent = text;
+  messages.appendChild(div);
+  messages.scrollTop = messages.scrollHeight;
+}
+
 sendBtn.addEventListener("click", sendMessage);
-input.addEventListener("keypress", e => {
-  if (e.key === "Enter") sendMessage();
-});
+input.addEventListener("keypress", e => { if (e.key === "Enter") sendMessage(); });
+
 </script>
 
 </body>
