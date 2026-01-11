@@ -5,28 +5,27 @@
 <title>Agriculture Assistant 🌱</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
-body { font-family: Arial,sans-serif; background: #eef7ee; display: flex; justify-content: center; align-items: center; height: 100vh; }
-#chatbox { width: 350px; background: white; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); display: flex; flex-direction: column; }
-#header { background: #2ecc71; color: white; padding: 15px; text-align: center; border-radius: 15px 15px 0 0; }
-#messages { flex: 1; padding: 10px; overflow-y: auto; max-height: 400px; }
-.msg { margin-bottom: 10px; }
-.user { color: #2c3e50; font-weight: bold; }
-.bot { color: #27ae60; }
-#input { display: flex; border-top: 1px solid #ddd; }
-#input input { flex: 1; border: none; padding: 10px; }
-#input button { border: none; background: #2ecc71; color: white; padding: 10px 15px; cursor: pointer; }
+body { font-family: Arial,sans-serif; background: #eef7ee; display: flex; justify-content:center; align-items:center; height:100vh; }
+#chatbox { width: 350px; background:white; border-radius:15px; box-shadow:0 5px 15px rgba(0,0,0,0.2); display:flex; flex-direction:column; }
+#header { background:#2ecc71; color:white; padding:15px; text-align:center; border-radius:15px 15px 0 0; }
+#messages { flex:1; padding:10px; overflow-y:auto; }
+.msg { margin-bottom:10px; }
+.user { color:#2c3e50; font-weight:bold; }
+.bot { color:#27ae60; }
+#input { display:flex; border-top:1px solid #ddd; }
+#input input { flex:1; border:none; padding:10px; }
+#input button { border:none; background:#2ecc71; color:white; padding:10px 15px; cursor:pointer; }
 </style>
 </head>
-
 <body>
 
 <div id="chatbox">
   <div id="header">🌾 Agriculture Assistant</div>
   <div id="messages">
-    <div class="msg bot">👋 Hello! Ask me about crops, soil, pests, or diseases.</div>
+    <div class="msg bot">👋 Hello! Ask me anything about crops, soil, pests, or diseases.</div>
   </div>
   <div id="input">
-    <input id="text" placeholder="Type your question..." />
+    <input id="text" placeholder="Ask about crops, soil, pests..." />
     <button id="sendBtn">Send</button>
   </div>
 </div>
@@ -36,13 +35,13 @@ const messages = document.getElementById("messages");
 const textInput = document.getElementById("text");
 const sendBtn = document.getElementById("sendBtn");
 
-// Replace with your deployed worker URL
+// ✅ Replace with your actual Worker URL
 const WORKER_URL = "https://agriculture-assistant.mikiyasteshome749.workers.dev";
 
-function appendMessage(text, sender) {
+function appendMessage(msg, sender) {
   const div = document.createElement("div");
-  div.className = `msg ${sender}`;
-  div.textContent = (sender === "user" ? "You: " : "Assistant: ") + text;
+  div.classList.add("msg", sender);
+  div.textContent = (sender === "user" ? "You: " : "Assistant: ") + msg;
   messages.appendChild(div);
   messages.scrollTop = messages.scrollHeight;
 }
@@ -53,12 +52,8 @@ async function sendMessage() {
 
   appendMessage(text, "user");
   textInput.value = "";
-
-  const botMsg = document.createElement("div");
-  botMsg.className = "msg bot";
-  botMsg.textContent = "Typing...";
-  messages.appendChild(botMsg);
-  messages.scrollTop = messages.scrollHeight;
+  appendMessage("Typing...", "bot"); // temporary message
+  const botMsgEl = messages.lastChild;
 
   try {
     const res = await fetch(WORKER_URL, {
@@ -68,19 +63,19 @@ async function sendMessage() {
     });
 
     if (!res.ok) throw new Error(`Worker error: ${res.status}`);
-
     const data = await res.json();
-    botMsg.textContent = "Assistant: " + (data.reply || "I could not generate a reply.");
 
+    botMsgEl.textContent = "Assistant: " + (data.reply || "I could not generate a reply.");
   } catch (err) {
     console.error(err);
-    botMsg.textContent = "Assistant: ⚠️ Error connecting to server.";
+    botMsgEl.textContent = "Assistant: ⚠️ Error connecting to server.";
   }
 }
 
-// Click and Enter key support
 sendBtn.addEventListener("click", sendMessage);
-textInput.addEventListener("keypress", e => { if (e.key === "Enter") sendMessage(); });
+textInput.addEventListener("keypress", e => {
+  if (e.key === "Enter") sendMessage();
+});
 </script>
 
 </body>
